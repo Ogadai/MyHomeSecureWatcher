@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Home Watcher</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_node_name">Node name</string>
+    <string name="pref_default_node_name"></string>
+
+    <string name="pref_title_hub_addr">Hub address</string>
+    <string name="pref_default_hub_addr">ws://localhost:8080</string>
+</resources>
