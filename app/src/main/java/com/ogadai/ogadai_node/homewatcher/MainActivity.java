@@ -1,11 +1,18 @@
 package com.ogadai.ogadai_node.homewatcher;
 
 import android.Manifest;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.Image;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.renderscript.ScriptGroup;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -14,17 +21,37 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-    private HomeSecureClient mClient;
-    private boolean mConnected;
+    private Configuration mConfig;
+    private WatcherService mService;
+    private boolean mIsBound;
 
     private TextView mConnectionState;
-    private Camera2 mCamera2;
 
     private static final String TAG = "MainActivity";
 
     static final int REQUEST_CAMERA_PERMISSION = 1;
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // This is called when the connection with the service has been
+            // established, giving us the service object we can use to
+            // interact with the service.  Because we have bound to a explicit
+            // service that we know is running in our own process, we can
+            // cast its IBinder to a concrete class and directly access it.
+            mService = ((WatcherService.LocalBinder)service).getService();
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected -- that is, its process crashed.
+            // Because it is running in our same process, we should never
+            // see this happen.
+            mService = null;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,27 +60,50 @@ public class MainActivity extends AppCompatActivity {
 
         mConnectionState = (TextView)findViewById(R.id.connectionState);
 
-        mClient = new HomeSecureClient();
-        mConnected = false;
-
-        mClient.setCallback(new HomeSecureClient.ClientCallback() {
-            @Override
-            public void updateState(final boolean connectionOpen) {
-                runOnUiThread(new Runnable() {
+        // The filter's action is BROADCAST_ACTION
+        IntentFilter statusIntentFilter = new IntentFilter(WatcherService.BROADCAST_NODE_STATUS);
+        ConnectionStateReceiver mStateReceiver = new ConnectionStateReceiver(
+                new ConnectionStateReceiver.Callback() {
                     @Override
-                    public void run() {
-                        mConnectionState.setText(connectionOpen ? "connected" : "not connected");
+                    public void updatedConnectionState(final boolean isConnected) {
+                        runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mConnectionState.setText(isConnected ? "connected" : "not connected");
+                                }
+                            });
                     }
                 });
-            }
-        });
+
+        // Registers the DownloadStateReceiver and its intent filters
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mStateReceiver, statusIntentFilter);
 
         requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
     }
 
+    void doBindService() {
+        if (!mIsBound) {
+            // Establish a connection with the service.  We use an explicit
+            // class name because we want a specific service implementation that
+            // we know will be running in our own process (and thus won't be
+            // supporting component replacement by other applications).
+            bindService(new Intent(this, WatcherService.class), mConnection, Context.BIND_AUTO_CREATE);
+            mIsBound = true;
+        }
+    }
+
+    void doUnbindService() {
+        if (mIsBound) {
+            // Detach our existing connection.
+            unbindService(mConnection);
+            mConfig = null;
+            mIsBound = false;
+        }
+    }
+
     private void initialiseCamera() {
-        mCamera2 = new Camera2(this);
-        mClient.setCameraControls(mCamera2);
+        doBindService();
     }
 
     @Override
@@ -61,26 +111,28 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         Configuration config = Configuration.readSettings(this);
+        if (mConfig != null &&
+                !(mConfig.getName().equals(config.getName()) && mConfig.getAddress().equals(config.getAddress())) ) {
+            doUnbindService();
+            doBindService();
+        }
+        mConfig = config;
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle(config.getName());
-        }
-
-        if (!mConnected && (mCamera2 != null)) {
-            mConnected = true;
-            mClient.connect(config);
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+    }
 
-        if (mConnected) {
-            mConnected = false;
-            mClient.disconnect();
-        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        doUnbindService();
     }
 
     @Override
@@ -88,6 +140,9 @@ public class MainActivity extends AppCompatActivity {
                                            @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                // Tell the user we stopped.
+                Toast.makeText(this, R.string.no_camera_permission, Toast.LENGTH_SHORT).show();
+
                 Log.e(TAG, "Wasn't granted camera permissions");
             } else {
                 initialiseCamera();

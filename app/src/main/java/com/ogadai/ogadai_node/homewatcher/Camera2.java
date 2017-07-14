@@ -583,6 +583,11 @@ public class Camera2 implements CameraControls {
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }
+
+                            if (mState == STATE_WAITING_LOCK || mState == STATE_WAITING_PRECAPTURE) {
+                                initiateCapture();
+                            }
+
                         }
 
                         @Override
@@ -601,16 +606,21 @@ public class Camera2 implements CameraControls {
      * Lock the focus as the first step for a still image capture.
      */
     private void lockFocus() {
+        // This is how to tell the camera to lock focus.
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                CameraMetadata.CONTROL_AF_TRIGGER_START);
+        // Tell #mCaptureCallback to wait for the lock.
+        mState = STATE_WAITING_LOCK;
+        if (mCaptureSession != null) {
+            initiateCapture();
+        }
+    }
+
+    private void initiateCapture() {
         try {
-            // This is how to tell the camera to lock focus.
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                    CameraMetadata.CONTROL_AF_TRIGGER_START);
-            // Tell #mCaptureCallback to wait for the lock.
-            mState = STATE_WAITING_LOCK;
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
+            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Failed to capture image", e);
         }
     }
 
@@ -619,16 +629,13 @@ public class Camera2 implements CameraControls {
      * we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
      */
     private void runPrecaptureSequence() {
-        try {
-            // This is how to tell the camera to trigger.
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-                    CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-            // Tell #mCaptureCallback to wait for the precapture sequence to be set.
-            mState = STATE_WAITING_PRECAPTURE;
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
+        // This is how to tell the camera to trigger.
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+        // Tell #mCaptureCallback to wait for the precapture sequence to be set.
+        mState = STATE_WAITING_PRECAPTURE;
+        if (mCaptureSession != null) {
+            initiateCapture();
         }
     }
 
