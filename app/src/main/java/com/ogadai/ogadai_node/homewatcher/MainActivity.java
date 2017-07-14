@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean mConnected;
 
     private TextView mConnectionState;
-    private Camera2BasicFragment mCamera2Basic;
+    private Camera2 mCamera2;
 
     private static final String TAG = "MainActivity";
 
@@ -52,12 +52,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initialiseCamera() {
-        mCamera2Basic = Camera2BasicFragment.newInstance();
-        getFragmentManager().beginTransaction()
-                .replace(R.id.container, mCamera2Basic)
-                .commit();
-
-        mClient.setCameraControls(mCamera2Basic);
+        mCamera2 = new Camera2(this);
+        mClient.setCameraControls(mCamera2);
     }
 
     @Override
@@ -71,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             actionBar.setTitle(config.getName());
         }
 
-        if (!mConnected && mCamera2Basic != null) {
+        if (!mConnected && (mCamera2 != null)) {
             mConnected = true;
             mClient.connect(config);
         }
