@@ -3,7 +3,7 @@ package com.ogadai.ogadai_node.homewatcher.devices;
 import android.media.Image;
 import android.util.Log;
 
-import com.ogadai.ogadai_node.homewatcher.Camera2BasicFragment;
+import com.ogadai.ogadai_node.homewatcher.Camera2;
 import com.ogadai.ogadai_node.homewatcher.CameraControls;
 
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * Created by alee on 03/07/2017.
  */
 
-public class CameraDevice extends DeviceBase implements Camera2BasicFragment.TakePictureCallback {
+public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallback {
     private HashMap<String, String> mStates;
 
     private boolean mTimelapseOn;
@@ -188,7 +188,7 @@ public class CameraDevice extends DeviceBase implements Camera2BasicFragment.Tak
 
 
     private void snapshotAfterDelay() {
-        final Camera2BasicFragment.TakePictureCallback callback = this;
+        final Camera2.TakePictureCallback callback = this;
 
         mSnapshotTimer = mScheduler.schedule(new Runnable() {
             @Override

@@ -98,6 +98,10 @@ public class Camera2 implements CameraControls {
      */
     private static final int STATE_PICTURE_TAKEN = 4;
 
+
+    private static final int DEFAULT_WIDTH = 1280;
+    private static final int DEFAULT_HEIGHT = 960;
+
     /**
      * Max preview width that is guaranteed by Camera2 API
      */
@@ -176,7 +180,7 @@ public class Camera2 implements CameraControls {
      */
     private ImageReader mImageReader;
 
-    private Camera2BasicFragment.TakePictureCallback mTakePictureCallback;
+    private TakePictureCallback mTakePictureCallback;
 
     public Camera2(Context context) {
         mContext = context;
@@ -347,7 +351,7 @@ public class Camera2 implements CameraControls {
     private void startCamera() {
         startBackgroundThread();
 
-        openCamera(1024, 768);
+        openCamera(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
 
     private void stopCamera() {
@@ -369,7 +373,7 @@ public class Camera2 implements CameraControls {
      * Initiate a still image capture.
      */
     @Override
-    public void takePicture(Camera2BasicFragment.TakePictureCallback callback) {
+    public void takePicture(TakePictureCallback callback) {
         mTakePictureCallback = callback;
         lockFocus();
     }
@@ -424,30 +428,18 @@ public class Camera2 implements CameraControls {
 
                 int rotatedPreviewWidth = width;
                 int rotatedPreviewHeight = height;
-                int maxPreviewWidth = width;
-                int maxPreviewHeight = height;
 
                 if (swappedDimensions) {
                     rotatedPreviewWidth = height;
                     rotatedPreviewHeight = width;
-                    maxPreviewWidth = height;
-                    maxPreviewHeight = width;
-                }
-
-                if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                    maxPreviewWidth = MAX_PREVIEW_WIDTH;
-                }
-
-                if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                    maxPreviewHeight = MAX_PREVIEW_HEIGHT;
                 }
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                 // garbage capture data.
                 mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                        maxPreviewHeight);
+                        rotatedPreviewWidth, rotatedPreviewHeight, MAX_PREVIEW_WIDTH,
+                        MAX_PREVIEW_HEIGHT);
 
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.JPEG, /*maxImages*/10);
@@ -718,50 +710,6 @@ public class Camera2 implements CameraControls {
             requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
                     CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
         }
-    }
-
-    /**
-     * Saves a JPEG {@link Image} into the specified {@link File}.
-     */
-    private static class ImageSaver implements Runnable {
-
-        /**
-         * The JPEG image
-         */
-        private final Image mImage;
-        /**
-         * The file we save the image into.
-         */
-        private final File mFile;
-
-        public ImageSaver(Image image, File file) {
-            mImage = image;
-            mFile = file;
-        }
-
-        @Override
-        public void run() {
-            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(mFile);
-                output.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                mImage.close();
-                if (null != output) {
-                    try {
-                        output.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-
     }
 
     /**

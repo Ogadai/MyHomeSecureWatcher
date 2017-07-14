@@ -8,5 +8,5 @@ public interface CameraControls {
 
     void stop();
 
-    void takePicture(Camera2BasicFragment.TakePictureCallback callback);
+    void takePicture(Camera2.TakePictureCallback callback);
 }

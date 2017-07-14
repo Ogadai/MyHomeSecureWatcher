@@ -221,7 +221,7 @@ public class Camera2BasicFragment extends Fragment implements CameraControls {
      */
     private ImageReader mImageReader;
 
-    private TakePictureCallback mTakePictureCallback;
+    private Camera2.TakePictureCallback mTakePictureCallback;
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -461,7 +461,7 @@ public class Camera2BasicFragment extends Fragment implements CameraControls {
      * Initiate a still image capture.
      */
     @Override
-    public void takePicture(TakePictureCallback callback) {
+    public void takePicture(Camera2.TakePictureCallback callback) {
         mTakePictureCallback = callback;
         lockFocus();
     }
@@ -920,10 +920,6 @@ public class Camera2BasicFragment extends Fragment implements CameraControls {
                     (long) rhs.getWidth() * rhs.getHeight());
         }
 
-    }
-
-    public interface TakePictureCallback {
-        void result(Image image);
     }
 
 }
