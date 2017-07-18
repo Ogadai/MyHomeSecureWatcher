@@ -6,11 +6,25 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.Image;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.ogadai.ogadai_node.homewatcher.messages.SetState;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by alee on 14/07/2017.
@@ -73,6 +87,55 @@ public class WatcherService extends Service {
 
         // Display a notification about us starting.  We put an icon in the status bar.
         showNotification(config.getName());
+    }
+
+    private void testSnapshot() {
+        mCamera2.start();
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);;
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                mCamera2.takePicture(new Camera2.TakePictureCallback() {
+                    @Override
+                    public void result(Image image) {
+                        Log.i(TAG, "Image received");
+                        saveImage(image);
+                        mCamera2.stop();
+                    }
+                });
+            }
+        }, 1000, TimeUnit.MILLISECONDS);
+    }
+
+    private void saveImage(Image image) {
+        File file = new File(this.getExternalFilesDir(null), "pic.jpg");
+
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        FileOutputStream output = null;
+        try {
+            output = new FileOutputStream(file);
+            output.write(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            image.close();
+            if (null != output) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        try {
+            MediaStore.Images.Media.insertImage(getContentResolver(), file.getPath(), "pic.jpg", "snapshot");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

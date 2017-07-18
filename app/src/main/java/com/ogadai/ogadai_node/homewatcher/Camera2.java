@@ -405,7 +405,7 @@ public class Camera2 implements CameraControls {
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
                 // coordinate.
-                int displayRotation = Surface.ROTATION_180;
+                int displayRotation = Surface.ROTATION_90;
                 //noinspection ConstantConditions
                 mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                 boolean swappedDimensions = false;
@@ -428,18 +428,22 @@ public class Camera2 implements CameraControls {
 
                 int rotatedPreviewWidth = width;
                 int rotatedPreviewHeight = height;
+                int maxPreviewWidth = MAX_PREVIEW_WIDTH;
+                int maxPreviewHeight = MAX_PREVIEW_HEIGHT;
 
                 if (swappedDimensions) {
                     rotatedPreviewWidth = height;
                     rotatedPreviewHeight = width;
+                    maxPreviewWidth = MAX_PREVIEW_HEIGHT;
+                    maxPreviewHeight = MAX_PREVIEW_WIDTH;
                 }
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                 // garbage capture data.
                 mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        rotatedPreviewWidth, rotatedPreviewHeight, MAX_PREVIEW_WIDTH,
-                        MAX_PREVIEW_HEIGHT);
+                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
+                        maxPreviewHeight);
 
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.JPEG, /*maxImages*/10);
@@ -648,7 +652,7 @@ public class Camera2 implements CameraControls {
             setAutoFlash(captureBuilder);
 
             // Orientation
-            int rotation = 0;
+            int rotation = Surface.ROTATION_90;
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
 
             CameraCaptureSession.CaptureCallback CaptureCallback
