@@ -10,6 +10,7 @@ import android.media.Image;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -40,6 +41,8 @@ public class WatcherService extends Service {
     private HomeSecureClient mClient;
     private Camera2 mCamera2;
 
+    private PowerManager.WakeLock mWakeLock;
+
     private static final String TAG = "WatcherService";
 
     public static final String BROADCAST_NODE_STATUS = "com.ogadai.ogadai_node.homewatcher.BROADCAST";
@@ -59,6 +62,7 @@ public class WatcherService extends Service {
 
     @Override
     public void onCreate() {
+        close();
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
         mClient = new HomeSecureClient();
@@ -85,8 +89,15 @@ public class WatcherService extends Service {
         Configuration config = Configuration.readSettings(this);
         mClient.connect(config);
 
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HomeSecureWatcherLock");
+        mWakeLock.acquire();
+
         // Display a notification about us starting.  We put an icon in the status bar.
         showNotification(config.getName());
+
+        // Tell the user we started.
+        Toast.makeText(this, R.string.watcher_service_started, Toast.LENGTH_SHORT).show();
     }
 
     private void testSnapshot() {
@@ -150,10 +161,22 @@ public class WatcherService extends Service {
         // Cancel the persistent notification.
         mNM.cancel(NOTIFICATION);
 
-        mClient.disconnect();
+        close();
 
         // Tell the user we stopped.
         Toast.makeText(this, R.string.watcher_service_stopped, Toast.LENGTH_SHORT).show();
+    }
+
+    private void close() {
+        if (mClient != null) {
+            mClient.disconnect();
+            mClient = null;
+        }
+
+        if (mWakeLock != null) {
+            mWakeLock.release();
+            mWakeLock = null;
+        }
     }
 
     @Override
