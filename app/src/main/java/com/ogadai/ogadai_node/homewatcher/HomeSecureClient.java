@@ -6,6 +6,7 @@ import com.ogadai.ogadai_node.homewatcher.devices.CameraDevice;
 import com.ogadai.ogadai_node.homewatcher.devices.Device;
 import com.ogadai.ogadai_node.homewatcher.messages.Initialise;
 import com.ogadai.ogadai_node.homewatcher.messages.Message;
+import com.ogadai.ogadai_node.homewatcher.messages.Ping;
 import com.ogadai.ogadai_node.homewatcher.messages.Sensor;
 import com.ogadai.ogadai_node.homewatcher.messages.SetState;
 import com.ogadai.ogadai_node.homewatcher.messages.Settings;
@@ -34,9 +35,11 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
 
     private ScheduledExecutorService mScheduler;
     private ScheduledFuture mTimerHandle;
+    private ScheduledFuture mPingHandle;
 
     private static final String TAG = "HomeSecureClient";
     private static final int RETRYDELAYSECONDS = 10;
+    private static final int PINGSECONDS = 10;
 
     public HomeSecureClient() {
         mClient = new WebsocketClientEndpoint();
@@ -77,7 +80,7 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
 
     public void send(Message message) {
         String strMessage = message.toJSON();
-        Log.d(TAG, strMessage);
+        Log.d(TAG, "send: " + strMessage);
         mClient.sendMessage(strMessage);
     }
 
@@ -140,6 +143,7 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
 
     @Override
     public void handleMessage(String message) {
+        Log.d(TAG, "receive: " + message);
         Message decoded = Message.fromJSON(message);
 
         if (decoded != null) {
@@ -149,7 +153,6 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
                 handleMessage((SetState)decoded);
             }
         }
-        Log.d(TAG, message);
     }
 
     private void handleMessage(Settings settings) {
@@ -189,17 +192,39 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
         }
 
         send(new Initialise(mConfig.getName()));
+        schedulePing();
     }
 
     @Override
     public void handleClose(boolean error) {
         Log.i(TAG, "websocket closed");
 
+        if (mPingHandle != null) {
+            mPingHandle.cancel(false);
+        }
+
         if (mCallback != null) {
             mCallback.updateState(false);
         }
 
         reconnectAfterDelay();
+    }
+
+    private void schedulePing() {
+        mPingHandle = mScheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                mPingHandle = null;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        send(new Ping());
+                    }
+                }).start();
+
+                schedulePing();
+            }
+        }, PINGSECONDS, TimeUnit.SECONDS);
     }
 
     public interface ClientCallback {
