@@ -197,7 +197,8 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
                     @Override
                     public void run() {
                         if (mSnapshotTimer != null && mCameraControls != null) {
-                            mCameraControls.takePicture(callback);
+                            boolean autoFlash = mTimelapseOn;
+                            mCameraControls.takePicture(autoFlash, callback);
                         }
                         mSnapshotTimer = null;
                     }

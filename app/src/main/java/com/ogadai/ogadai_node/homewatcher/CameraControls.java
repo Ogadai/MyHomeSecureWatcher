@@ -8,5 +8,5 @@ public interface CameraControls {
 
     void stop();
 
-    void takePicture(Camera2.TakePictureCallback callback);
+    void takePicture(boolean autoFlash, Camera2.TakePictureCallback callback);
 }

@@ -16,6 +16,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.ogadai.ogadai_node.homewatcher.messages.Ping;
 import com.ogadai.ogadai_node.homewatcher.messages.SetState;
 
 import java.io.File;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,13 +43,19 @@ public class WatcherService extends Service {
     private HomeSecureClient mClient;
     private Camera2 mCamera2;
 
+    private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
+
+    private ScheduledExecutorService mScheduler;
+    private ScheduledFuture mWakeRefreshHandle;
 
     private static final String TAG = "WatcherService";
 
     public static final String BROADCAST_NODE_STATUS = "com.ogadai.ogadai_node.homewatcher.BROADCAST";
     // Defines the key for the status "extra" in an Intent
     public static final String EXTENDED_DATA_STATUS = "com.ogadai.ogadai_node.homewatcher.STATUS";
+
+    private static final int WAKEREFRESHSECONDS = 10*60;
 
     /**
      * Class for clients to access.  Because we know this service always
@@ -64,6 +72,7 @@ public class WatcherService extends Service {
     public void onCreate() {
         close();
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        mScheduler = Executors.newScheduledThreadPool(1);
 
         mClient = new HomeSecureClient();
         final Context broadcastContext = this;
@@ -89,9 +98,9 @@ public class WatcherService extends Service {
         Configuration config = Configuration.readSettings(this);
         mClient.connect(config);
 
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HomeSecureWatcherLock");
-        mWakeLock.acquire();
+        mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        getWakeLock();
+        refreshWakeLock();
 
         // Display a notification about us starting.  We put an icon in the status bar.
         showNotification(config.getName());
@@ -103,11 +112,10 @@ public class WatcherService extends Service {
     private void testSnapshot() {
         mCamera2.start();
 
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);;
-        scheduler.schedule(new Runnable() {
+        mScheduler.schedule(new Runnable() {
             @Override
             public void run() {
-                mCamera2.takePicture(new Camera2.TakePictureCallback() {
+                mCamera2.takePicture(false, new Camera2.TakePictureCallback() {
                     @Override
                     public void result(Image image) {
                         Log.i(TAG, "Image received");
@@ -153,7 +161,7 @@ public class WatcherService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Received start id " + startId + ": " + intent);
 
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Override
@@ -173,10 +181,41 @@ public class WatcherService extends Service {
             mClient = null;
         }
 
+        if (mWakeRefreshHandle != null) {
+            mWakeRefreshHandle.cancel(false);
+            mWakeRefreshHandle = null;
+        }
+
         if (mWakeLock != null) {
             mWakeLock.release();
             mWakeLock = null;
         }
+    }
+
+    private void getWakeLock() {
+        mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HomeSecureWatcherLock");
+        mWakeLock.acquire();
+    }
+
+
+    private void refreshWakeLock() {
+        mWakeRefreshHandle = mScheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                mWakeRefreshHandle = null;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mWakeLock != null) {
+                            mWakeLock.release();
+                        }
+                        getWakeLock();
+                    }
+                }).start();
+
+                refreshWakeLock();
+            }
+        }, WAKEREFRESHSECONDS, TimeUnit.SECONDS);
     }
 
     @Override

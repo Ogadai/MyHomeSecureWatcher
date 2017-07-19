@@ -136,6 +136,8 @@ public class Camera2 implements CameraControls {
      */
     private Size mPreviewSize;
 
+    private boolean mAutoFlash;
+
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
      */
@@ -373,7 +375,8 @@ public class Camera2 implements CameraControls {
      * Initiate a still image capture.
      */
     @Override
-    public void takePicture(TakePictureCallback callback) {
+    public void takePicture(boolean autoFlash, TakePictureCallback callback) {
+        mAutoFlash = autoFlash;
         mTakePictureCallback = callback;
         lockFocus();
     }
@@ -570,7 +573,7 @@ public class Camera2 implements CameraControls {
                                 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 // Flash is automatically enabled when necessary.
-                                setAutoFlash(mPreviewRequestBuilder);
+//                                setAutoFlash(mPreviewRequestBuilder);
 
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
@@ -649,7 +652,9 @@ public class Camera2 implements CameraControls {
             // Use the same AE and AF modes as the preview.
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            setAutoFlash(captureBuilder);
+            if (mAutoFlash) {
+                setAutoFlash(captureBuilder);
+            }
 
             // Orientation
             int rotation = Surface.ROTATION_90;
@@ -697,7 +702,7 @@ public class Camera2 implements CameraControls {
             // Reset the auto-focus trigger
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-            setAutoFlash(mPreviewRequestBuilder);
+//            setAutoFlash(mPreviewRequestBuilder);
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
                     mBackgroundHandler);
             // After this, the camera will go back to the normal state of preview.

@@ -127,10 +127,13 @@ public class WebsocketClientEndpoint {
     /**
      * Send a message.
      *
+     *
      * @param message
      */
     public void sendMessage(String message) {
-        mUserSession.getAsyncRemote().sendText(message);
+        if (mUserSession != null) {
+            mUserSession.getAsyncRemote().sendText(message);
+        }
     }
 
     /**

@@ -25,7 +25,7 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
     private Configuration mConfig;
-    private WatcherService mService;
+//    private WatcherService mService;
     private boolean mIsBound;
 
     private TextView mConnectionState;
@@ -33,25 +33,25 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     static final int REQUEST_CAMERA_PERMISSION = 1;
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            // This is called when the connection with the service has been
-            // established, giving us the service object we can use to
-            // interact with the service.  Because we have bound to a explicit
-            // service that we know is running in our own process, we can
-            // cast its IBinder to a concrete class and directly access it.
-            mService = ((WatcherService.LocalBinder)service).getService();
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            // This is called when the connection with the service has been
-            // unexpectedly disconnected -- that is, its process crashed.
-            // Because it is running in our same process, we should never
-            // see this happen.
-            mService = null;
-        }
-    };
+//
+//    private ServiceConnection mConnection = new ServiceConnection() {
+//        public void onServiceConnected(ComponentName className, IBinder service) {
+//            // This is called when the connection with the service has been
+//            // established, giving us the service object we can use to
+//            // interact with the service.  Because we have bound to a explicit
+//            // service that we know is running in our own process, we can
+//            // cast its IBinder to a concrete class and directly access it.
+//            mService = ((WatcherService.LocalBinder)service).getService();
+//        }
+//
+//        public void onServiceDisconnected(ComponentName className) {
+//            // This is called when the connection with the service has been
+//            // unexpectedly disconnected -- that is, its process crashed.
+//            // Because it is running in our same process, we should never
+//            // see this happen.
+//            mService = null;
+//        }
+//    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +92,8 @@ public class MainActivity extends AppCompatActivity {
             // class name because we want a specific service implementation that
             // we know will be running in our own process (and thus won't be
             // supporting component replacement by other applications).
-            bindService(new Intent(this, WatcherService.class), mConnection, Context.BIND_AUTO_CREATE);
+//            bindService(new Intent(this, WatcherService.class), mConnection, Context.BIND_AUTO_CREATE);
+            startService(new Intent(this, WatcherService.class));
             mIsBound = true;
         }
     }
@@ -100,7 +101,8 @@ public class MainActivity extends AppCompatActivity {
     void doUnbindService() {
         if (mIsBound) {
             // Detach our existing connection.
-            unbindService(mConnection);
+//            unbindService(mConnection);
+            stopService(new Intent(this, WatcherService.class));
             mConfig = null;
             mIsBound = false;
         }

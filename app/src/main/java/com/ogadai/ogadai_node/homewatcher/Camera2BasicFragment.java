@@ -461,7 +461,7 @@ public class Camera2BasicFragment extends Fragment implements CameraControls {
      * Initiate a still image capture.
      */
     @Override
-    public void takePicture(Camera2.TakePictureCallback callback) {
+    public void takePicture(boolean autoFlash, Camera2.TakePictureCallback callback) {
         mTakePictureCallback = callback;
         lockFocus();
     }
