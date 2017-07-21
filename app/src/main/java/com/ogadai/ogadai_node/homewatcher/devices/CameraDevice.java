@@ -1,5 +1,7 @@
 package com.ogadai.ogadai_node.homewatcher.devices;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.util.Log;
 
@@ -106,13 +108,8 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         }
     }
 
-    private void imageTimeLapse(Image image) {
+    private void imageTimeLapse(byte[] bytes) {
         Log.i(TAG, "Image for timelapse");
-
-        // Get the image bytes
-        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
 
         post("UploadSnapshot", bytes);
     }
@@ -149,8 +146,17 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         }
     }
 
-    private void imageMotion(Image image) {
+    private void imageMotion(byte[] bytes) {
         Log.i(TAG, "Image for motion detection");
+
+        // Get the image bytes
+        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getRowBytes());
+        bitmap.copyPixelsToBuffer(bitmapBuffer);
+
+        byte[] bitmapBytes = bitmapBuffer.array();
+
+        Log.i(TAG, "Decoded bitmap (" + bitmap.getWidth() + "*" + bitmap.getHeight() + ") - " + bitmapBytes.length + " bytes");
     }
 
     private void start() {
@@ -209,13 +215,17 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
 
     @Override
     public void result(final Image image) {
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        final byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+
         new Thread(new Runnable() {
             @Override
             public void run() {
                 if (mTimelapseOn) {
-                    imageTimeLapse(image);
+                    imageTimeLapse(bytes);
                 } else if (mMotionOn) {
-                    imageMotion(image);
+                    imageMotion(bytes);
                 }
 
                 if (mTimelapseOn || mMotionOn) {

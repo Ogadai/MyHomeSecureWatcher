@@ -197,7 +197,9 @@ public class Camera2 implements CameraControls {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mTakePictureCallback.result(reader.acquireNextImage());
+            Image image = reader.acquireNextImage();
+            mTakePictureCallback.result(image);
+            image.close();
         }
 
     };
