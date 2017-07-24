@@ -3,6 +3,7 @@ package com.ogadai.ogadai_node.homewatcher;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 /**
  * Created by alee on 30/06/2017.
@@ -44,6 +45,8 @@ public class Configuration {
     public String getName() { return mName; }
     public void setName(String name) { mName = name; }
 
+    private static final String TAG = "Configuration";
+
     public static Configuration readSettings(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -51,11 +54,10 @@ public class Configuration {
         String name = prefs.getString(NAMEPREF, DEFAULT_NAME);
 
         Configuration config = new Configuration(address, name);
-
-        config.setColourThreshold(prefs.getInt(THRESHOLDPREF, DEFAULT_THRESHOLD));
-        config.setMinPercent(prefs.getInt(MINPRECENTPREF, DEFAULT_MINPERCENT));
-        config.setMaxPercent(prefs.getInt(MAXPERCENTPREF, DEFAULT_MAXPERCENT));
-        config.setSequence(prefs.getInt(SEQUENCEPREF, DEFAULT_SEQUENCE));
+        config.setColourThreshold(getInt(prefs, THRESHOLDPREF, DEFAULT_THRESHOLD));
+        config.setMinPercent(getInt(prefs, MINPRECENTPREF, DEFAULT_MINPERCENT));
+        config.setMaxPercent(getInt(prefs, MAXPERCENTPREF, DEFAULT_MAXPERCENT));
+        config.setSequence(getInt(prefs, SEQUENCEPREF, DEFAULT_SEQUENCE));
 
         return config;
     }
@@ -67,12 +69,28 @@ public class Configuration {
         editor.putString(ADDRESSPREF, config.getAddress());
         editor.putString(NAMEPREF, config.getName());
 
-        editor.putInt(THRESHOLDPREF, config.getColourThreshold());
-        editor.putInt(MINPRECENTPREF, config.getMinPercent());
-        editor.putInt(MAXPERCENTPREF, config.getMaxPercent());
-        editor.putInt(SEQUENCEPREF, config.getSequence());
+        putInt(editor, THRESHOLDPREF, config.getColourThreshold());
+        putInt(editor, MINPRECENTPREF, config.getMinPercent());
+        putInt(editor, MAXPERCENTPREF, config.getMaxPercent());
+        putInt(editor, SEQUENCEPREF, config.getSequence());
 
         editor.commit();
+    }
+
+    private static void putInt(SharedPreferences.Editor editor, String name, int value) {
+        editor.putString(name, Integer.toString(value));
+    }
+
+    private static int getInt(SharedPreferences prefs, String name, int defaultValue) {
+        try {
+            String strValue = prefs.getString(name, null);
+            if (strValue != null && strValue.length() > 0) {
+                    return Integer.parseInt(strValue);
+            }
+        } catch(Exception e) {
+            Log.d(TAG, "Couldn't read preference value '" + name + "'");
+        }
+        return defaultValue;
     }
 
     public int getColourThreshold() {

@@ -155,6 +155,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.ADDRESSPREF));
             bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.NAMEPREF));
+            bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.THRESHOLDPREF));
+            bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.MINPRECENTPREF));
+            bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.MAXPERCENTPREF));
+            bindPreferenceSummaryToValue(findPreference(com.ogadai.ogadai_node.homewatcher.Configuration.SEQUENCEPREF));
         }
 
         @Override

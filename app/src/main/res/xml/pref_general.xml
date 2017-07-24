@@ -20,4 +20,44 @@
         android:singleLine="true"
         android:title="@string/pref_title_hub_addr" />
 
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_colour_threshold"
+        android:inputType="number"
+        android:key="colour_threshold"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_colour_threshold" />
+
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_min_percent"
+        android:inputType="number"
+        android:key="min_percent"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_min_percent" />
+
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_max_percent"
+        android:inputType="number"
+        android:key="max_percent"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_max_percent" />
+
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_sequence"
+        android:inputType="number"
+        android:key="sequence"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_sequence" />
+
 </PreferenceScreen>

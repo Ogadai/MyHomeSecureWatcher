@@ -13,6 +13,18 @@
     <string name="pref_title_hub_addr">Hub address</string>
     <string name="pref_default_hub_addr">ws://localhost:8080</string>
 
+    <string name="pref_title_colour_threshold">Colour threshold</string>
+    <string name="pref_default_colour_threshold">15</string>
+
+    <string name="pref_title_min_percent">Min percent</string>
+    <string name="pref_default_min_percent">5</string>
+
+    <string name="pref_title_max_percent">Max percent</string>
+    <string name="pref_default_max_percent">40</string>
+
+    <string name="pref_title_sequence">Sequence</string>
+    <string name="pref_default_sequence">2</string>
+
     <string name="watcher_service_started">Started watcher</string>
     <string name="watcher_service_stopped">Stopped watcher</string>
     <string name="watcher_service_label">Home Watcher</string>
