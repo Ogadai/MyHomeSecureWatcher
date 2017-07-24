@@ -16,6 +16,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.ogadai.ogadai_node.homewatcher.devices.Motion;
 import com.ogadai.ogadai_node.homewatcher.messages.Ping;
 import com.ogadai.ogadai_node.homewatcher.messages.SetState;
 
@@ -75,6 +76,7 @@ public class WatcherService extends Service {
         mScheduler = Executors.newScheduledThreadPool(1);
 
         mClient = new HomeSecureClient();
+        Motion.setContext(this);
         final Context broadcastContext = this;
         mClient.setCallback(new HomeSecureClient.ClientCallback() {
             @Override

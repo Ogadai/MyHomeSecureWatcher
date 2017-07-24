@@ -25,6 +25,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
     private boolean mTimelapseOn;
     private boolean mVideoOn;
     private boolean mMotionOn;
+    private Motion mMotion;
 
     private static final String TAG = "CameraDevice";
 
@@ -131,6 +132,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
 
     private void startMotion() {
         if (!mMotionOn) {
+            mMotion = new Motion();
             mMotionOn = true;
             Log.i(TAG, "motion detection on");
 
@@ -140,6 +142,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
     private void stopMotion() {
         if (mMotionOn) {
             mMotionOn = false;
+            mMotion = null;
             Log.i(TAG, "motion detection off");
 
             stop();
@@ -154,9 +157,13 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getRowBytes());
         bitmap.copyPixelsToBuffer(bitmapBuffer);
 
-        byte[] bitmapBytes = bitmapBuffer.array();
+        if (mMotion.checkImage(bitmap.getWidth(), bitmap.getHeight(), bitmapBuffer)) {
+            // Movement detected
+            emit("movement");
 
-        Log.i(TAG, "Decoded bitmap (" + bitmap.getWidth() + "*" + bitmap.getHeight() + ") - " + bitmapBytes.length + " bytes");
+            // Upload the snapshot
+            post("UploadSnapshot", bytes);
+        }
     }
 
     private void start() {
@@ -192,7 +199,6 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         }, 1000, TimeUnit.MILLISECONDS);
     }
 
-
     private void snapshotAfterDelay() {
         final Camera2.TakePictureCallback callback = this;
 
@@ -224,7 +230,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
             public void run() {
                 if (mTimelapseOn) {
                     imageTimeLapse(bytes);
-                } else if (mMotionOn) {
+                } else if (mMotionOn && mMotion != null) {
                     imageMotion(bytes);
                 }
 

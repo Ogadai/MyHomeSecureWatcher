@@ -18,6 +18,11 @@ public class SetState extends Message {
     public SetState() {
         super(TYPE);
     }
+    public SetState(String name, String state) {
+        super(TYPE);
+        mName = name;
+        mState  = state;
+    }
 
     public String getName() { return mName; }
     public final void setName(String name) { mName = name; }
