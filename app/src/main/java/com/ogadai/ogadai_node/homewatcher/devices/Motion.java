@@ -34,7 +34,7 @@ public class Motion {
 
     public boolean checkImage(int width, int height, ByteBuffer byteBuffer) {
         ImageData lastImage = mLastImage;
-        ImageData imageData = new ImageData(width, height, byteBuffer);
+        ImageData imageData = getImageData(width, height, byteBuffer);
         mLastImage = imageData;
 
         Log.d(TAG, "Checking image (" + imageData.getWidth() + " x " + imageData.getHeight() + ") - " + imageData.getBytes().length + " bytes");
@@ -52,6 +52,50 @@ public class Motion {
             }
         }
         return false;
+    }
+
+    private ImageData getImageData(int width, int height, ByteBuffer byteBuffer) {
+        int scale = mConfig.getScale();
+        if (scale > 1) {
+            // Scale this image
+            int sWidth = (int)Math.ceil((double)width / (double)scale);
+            int sHeight = (int)Math.ceil((double)height / (double)scale);
+
+            ByteBuffer scaledBuffer = ByteBuffer.allocate(sWidth * sHeight * 4);
+
+            // Copy scaled image
+            byte[] sourceBytes = byteBuffer.array();
+            int sourceRowSize = width * 4;
+            byte[] targetBytes = scaledBuffer.array();
+            for(int y = 0; y < sHeight; y++) {
+                for(int x = 0; x < sWidth; x++) {
+                    int[] totalValues = new int[] { 0, 0, 0, 0 };
+                    int count = 0;
+                    for(int dy = 0; dy < scale; dy++) {
+                        if (y * scale + dy < height) {
+                            for (int dx = 0; dx < scale; dx++) {
+                                if (x * scale + dx < width) {
+                                    count++;
+                                    for(int b = 0; b < 4; b++) {
+                                        totalValues[b] += sourceBytes[(y * scale + dy) * sourceRowSize + (x * scale + dx) * 4 + b];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (count > 0) {
+                        for (int b = 0; b < 4; b++) {
+                            targetBytes[(y * sWidth + x) * 4 + b] = (byte) (totalValues[b] / count);
+                        }
+                    }
+                }
+            }
+
+            return new ImageData(sWidth, sHeight, scaledBuffer);
+        } else {
+            return new ImageData(width, height, byteBuffer);
+        }
     }
 
     private boolean compare(ImageData file1, ImageData file2) {

@@ -112,6 +112,11 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
 
     private void connectSocket() {
         try {
+            if (mTimerHandle != null) {
+                mTimerHandle.cancel(false);
+                mTimerHandle = null;
+            }
+
             Log.i(TAG, "connecting");
             mClient.connect(new URI(mConfig.getAddress()));
         } catch (Exception e) {

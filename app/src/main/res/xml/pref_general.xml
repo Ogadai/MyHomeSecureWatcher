@@ -60,4 +60,14 @@
         android:singleLine="true"
         android:title="@string/pref_title_sequence" />
 
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_scale"
+        android:inputType="number"
+        android:key="scale"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_scale" />
+
 </PreferenceScreen>

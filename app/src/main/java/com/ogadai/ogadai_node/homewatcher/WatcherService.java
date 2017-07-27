@@ -44,6 +44,7 @@ public class WatcherService extends Service {
     private HomeSecureClient mClient;
     private Camera2 mCamera2;
     private boolean mConnected;
+    private boolean mInitialised;
 
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
@@ -166,10 +167,11 @@ public class WatcherService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Received start id " + startId + ": " + intent);
 
-        if (!mConnected && mClient != null) {
+        if (mInitialised && !mConnected && mClient != null) {
             Log.i(TAG, "Attempting to reconnect client");
             mClient.reconnect();
         }
+        mInitialised = true;
 
         return START_STICKY;
     }

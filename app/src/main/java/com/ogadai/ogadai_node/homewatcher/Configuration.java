@@ -17,6 +17,7 @@ public class Configuration {
     private int mMinPercent;
     private int mMaxPercent;
     private int mSequence;
+    private int mScale;
 
     public Configuration(String address, String name) {
         mAddress = address;
@@ -30,6 +31,7 @@ public class Configuration {
     public static final String MINPRECENTPREF = "min_percent";
     public static final String MAXPERCENTPREF = "max_percent";
     public static final String SEQUENCEPREF = "sequence";
+    public static final String SCALEPREF = "scale";
 
     private static final String DEFAULT_ADDRESS = "ws://10.0.2.2:45738";
     private static final String DEFAULT_NAME = "mytestnode";
@@ -38,6 +40,7 @@ public class Configuration {
     private static final int DEFAULT_MINPERCENT = 5;
     private static final int DEFAULT_MAXPERCENT = 40;
     private static final int DEFAULT_SEQUENCE = 2;
+    private static final int DEFAULT_SCALE = 4;
 
     public String getAddress() { return mAddress; }
     public void setAddress(String address) { mAddress = address; }
@@ -58,6 +61,7 @@ public class Configuration {
         config.setMinPercent(getInt(prefs, MINPRECENTPREF, DEFAULT_MINPERCENT));
         config.setMaxPercent(getInt(prefs, MAXPERCENTPREF, DEFAULT_MAXPERCENT));
         config.setSequence(getInt(prefs, SEQUENCEPREF, DEFAULT_SEQUENCE));
+        config.setScale(getInt(prefs, SCALEPREF, DEFAULT_SCALE));
 
         return config;
     }
@@ -72,7 +76,7 @@ public class Configuration {
         putInt(editor, THRESHOLDPREF, config.getColourThreshold());
         putInt(editor, MINPRECENTPREF, config.getMinPercent());
         putInt(editor, MAXPERCENTPREF, config.getMaxPercent());
-        putInt(editor, SEQUENCEPREF, config.getSequence());
+        putInt(editor, SCALEPREF, config.getScale());
 
         editor.commit();
     }
@@ -123,5 +127,13 @@ public class Configuration {
 
     public void setSequence(int sequence) {
         mSequence = sequence;
+    }
+
+    public int getScale() {
+        return mScale;
+    }
+
+    public void setScale(int scale) {
+        mScale = scale;
     }
 }
