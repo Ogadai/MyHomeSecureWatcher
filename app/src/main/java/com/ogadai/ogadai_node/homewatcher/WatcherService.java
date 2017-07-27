@@ -43,6 +43,7 @@ public class WatcherService extends Service {
 
     private HomeSecureClient mClient;
     private Camera2 mCamera2;
+    private boolean mConnected;
 
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
@@ -74,13 +75,16 @@ public class WatcherService extends Service {
         close();
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         mScheduler = Executors.newScheduledThreadPool(1);
+        Configuration config = Configuration.readSettings(this);
 
         mClient = new HomeSecureClient();
+        mConnected = false;
         Motion.setContext(this);
         final Context broadcastContext = this;
         mClient.setCallback(new HomeSecureClient.ClientCallback() {
             @Override
             public void updateState(final boolean connectionOpen) {
+                mConnected = connectionOpen;
                 /*
                  * Creates a new Intent containing a Uri object
                  * BROADCAST_ACTION is a custom Intent action
@@ -97,7 +101,6 @@ public class WatcherService extends Service {
         mCamera2 = new Camera2(this);
         mClient.setCameraControls(mCamera2);
 
-        Configuration config = Configuration.readSettings(this);
         mClient.connect(config);
 
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
@@ -162,6 +165,11 @@ public class WatcherService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Received start id " + startId + ": " + intent);
+
+        if (!mConnected && mClient != null) {
+            Log.i(TAG, "Attempting to reconnect client");
+            mClient.reconnect();
+        }
 
         return START_STICKY;
     }

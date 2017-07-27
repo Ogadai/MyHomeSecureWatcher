@@ -78,6 +78,16 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
         }).start();
     }
 
+    public void reconnect() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                disconnectSocket();
+                connectSocket();
+            }
+        }).start();
+    }
+
     public void send(Message message) {
         String strMessage = message.toJSON();
         Log.d(TAG, "send: " + strMessage);
