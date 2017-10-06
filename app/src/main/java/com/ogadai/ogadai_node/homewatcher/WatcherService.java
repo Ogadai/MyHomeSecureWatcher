@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.media.Image;
 import android.os.Binder;
 import android.os.Environment;
@@ -58,6 +59,12 @@ public class WatcherService extends Service {
     // Defines the key for the status "extra" in an Intent
     public static final String EXTENDED_DATA_STATUS = "com.ogadai.ogadai_node.homewatcher.STATUS";
 
+    public static final String BROADCAST_NODE_PREVIEW = "com.ogadai.ogadai_node.homewatcher.PREVIEW";
+    // Defines the key for the status "extra" in an Intent
+    public static final String EXTENDED_DATA_IMAGEWIDTH = "com.ogadai.ogadai_node.homewatcher.IMAGEWIDTH";
+    public static final String EXTENDED_DATA_IMAGEHEIGHT = "com.ogadai.ogadai_node.homewatcher.IMAGEHEIGHT";
+    public static final String EXTENDED_DATA_IMAGEBYTES = "com.ogadai.ogadai_node.homewatcher.IMAGEBYTES";
+
     private static final int WAKEREFRESHSECONDS = 10*60;
 
     /**
@@ -101,6 +108,18 @@ public class WatcherService extends Service {
 
         mCamera2 = new Camera2(this);
         mClient.setCameraControls(mCamera2);
+        mClient.setCameraPreview(new CameraPreview() {
+            @Override
+            public void showImage(int width, int height, byte[] imageBytes) {
+                Intent localIntent =
+                        new Intent(BROADCAST_NODE_PREVIEW)
+                                .putExtra(EXTENDED_DATA_IMAGEWIDTH, width)
+                                .putExtra(EXTENDED_DATA_IMAGEHEIGHT, height)
+                                .putExtra(EXTENDED_DATA_IMAGEBYTES, imageBytes);
+                // Broadcasts the Intent to receivers in this app.
+                LocalBroadcastManager.getInstance(broadcastContext).sendBroadcast(localIntent);
+            }
+        });
 
         mClient.connect(config);
 

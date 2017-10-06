@@ -1,6 +1,7 @@
 package com.ogadai.ogadai_node.homewatcher.devices;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.util.Log;
 
@@ -17,6 +18,7 @@ public class Motion {
     private int mCurrentSequence;
 
     private Configuration mConfig;
+    private int mColourThreshold;
 
     private static final String TAG = "Motion";
 
@@ -30,9 +32,10 @@ public class Motion {
         mCurrentSequence = 0;
 
         mConfig = Configuration.readSettings(mMotionContext);
+        mColourThreshold = mConfig.getColourThreshold() * 255 / 100;
     }
 
-    public boolean checkImage(int width, int height, ByteBuffer byteBuffer) {
+    public MotionResult checkImage(int width, int height, ByteBuffer byteBuffer) {
         ImageData lastImage = mLastImage;
         ImageData imageData = getImageData(width, height, byteBuffer);
         mLastImage = imageData;
@@ -40,7 +43,8 @@ public class Motion {
         Log.d(TAG, "Checking image (" + imageData.getWidth() + " x " + imageData.getHeight() + ") - " + imageData.getBytes().length + " bytes");
 
         if (lastImage != null) {
-            if (compare(lastImage, imageData)) {
+            MotionResult compareResult = compare(lastImage, imageData);
+            if (compareResult.movementDetected) {
                 mCurrentSequence++;
             } else {
                 mCurrentSequence = 0;
@@ -48,10 +52,17 @@ public class Motion {
 
             if (mCurrentSequence >= mConfig.getSequence()) {
                 mCurrentSequence = 0;
-                return true;
+                compareResult.movementDetected = throttleMotionDetected();
+            } else {
+                compareResult.movementDetected = false;
             }
+            return compareResult;
         }
-        return false;
+        return new MotionResult(false);
+    }
+
+    private boolean throttleMotionDetected() {
+        return true;
     }
 
     private ImageData getImageData(int width, int height, ByteBuffer byteBuffer) {
@@ -61,57 +72,41 @@ public class Motion {
             int sWidth = (int)Math.ceil((double)width / (double)scale);
             int sHeight = (int)Math.ceil((double)height / (double)scale);
 
-            ByteBuffer scaledBuffer = ByteBuffer.allocate(sWidth * sHeight * 4);
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(byteBuffer.array()));
 
-            // Copy scaled image
-            byte[] sourceBytes = byteBuffer.array();
-            int sourceRowSize = width * 4;
-            byte[] targetBytes = scaledBuffer.array();
-            for(int y = 0; y < sHeight; y++) {
-                for(int x = 0; x < sWidth; x++) {
-                    int[] totalValues = new int[] { 0, 0, 0, 0 };
-                    int count = 0;
-                    for(int dy = 0; dy < scale; dy++) {
-                        if (y * scale + dy < height) {
-                            for (int dx = 0; dx < scale; dx++) {
-                                if (x * scale + dx < width) {
-                                    count++;
-                                    for(int b = 0; b < 4; b++) {
-                                        totalValues[b] += sourceBytes[(y * scale + dy) * sourceRowSize + (x * scale + dx) * 4 + b];
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (count > 0) {
-                        for (int b = 0; b < 4; b++) {
-                            targetBytes[(y * sWidth + x) * 4 + b] = (byte) (totalValues[b] / count);
-                        }
-                    }
-                }
-            }
+            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, sWidth, sHeight, false);
+            ByteBuffer scaledBuffer = ByteBuffer.allocate(scaled.getHeight() * scaled.getRowBytes());
+            scaled.copyPixelsToBuffer(scaledBuffer);
 
             return new ImageData(sWidth, sHeight, scaledBuffer);
+
         } else {
             return new ImageData(width, height, byteBuffer);
         }
     }
 
-    private boolean compare(ImageData file1, ImageData file2) {
+    private MotionResult compare(ImageData file1, ImageData file2) {
         if ((file1.getWidth() != file2.getWidth())
             || (file1.getHeight() != file2.getHeight())) {
-            return false;
+            return new MotionResult(false);
         }
 
         int countedPixels = 0;
         int changedPixels = 0;
 
+        ImageData compareImage = new ImageData(file1.getWidth(), file1.getHeight());
+
         for(int y = 0; y < file1.getHeight(); y++) {
             for(int x = 0; x < file1.getWidth(); x++) {
                 countedPixels++;
-                if (isChanged(new Point(x, y), file1, file2)) {
+                Point point = new Point(x, y);
+                RGB imageRgb = getRGB(file2, point);
+                if (isChanged(point, file1, file2)) {
                     changedPixels++;
+                    setRGB(compareImage, point, new RGB(Math.min(imageRgb.r + 100, 255), imageRgb.g, imageRgb.b));
+                } else {
+                    setRGB(compareImage, point, imageRgb);
                 }
             }
         }
@@ -119,8 +114,10 @@ public class Motion {
         int percentChanged = changedPixels * 100 / countedPixels;
         Log.d(TAG, "Percent: " + percentChanged);
 
-        return percentChanged >= mConfig.getMinPercent()
+        boolean movement = percentChanged >= mConfig.getMinPercent()
             && percentChanged <= mConfig.getMaxPercent();
+
+        return new MotionResult(movement, compareImage);
     }
 
     private boolean isChanged(Point point, ImageData file1, ImageData file2) {
@@ -128,31 +125,42 @@ public class Motion {
         RGB rgb2 = getRGB(file2, point);
 
         if (rgb1 != null && rgb2 != null) {
-            return isColourChanged(rgb1.r, rgb2.r)
-                || isColourChanged(rgb1.g, rgb2.g)
-                || isColourChanged(rgb1.b, rgb2.b);
+            int change = ((int)Math.abs(rgb1.r - rgb2.r) + (int)Math.abs(rgb1.g - rgb2.g) + (int)Math.abs(rgb1.b - rgb2.b)) / 3;
+            return change > mColourThreshold;
         }
         return false;
     }
 
-    private boolean isColourChanged(int colour1, int colour2) {
-        return Math.abs(colour1 - colour2) > mConfig.getColourThreshold();
-    }
-
     private RGB getRGB(ImageData file, Point point) {
-        int pos = file.getWidth() * point.y + point.x;
+        int pos = (file.getWidth() * point.y + point.x) * 4;
         byte[] bytes = file.getBytes();
-        if (pos <= bytes .length - 4) {
+        if (pos <= bytes.length - 4) {
             return new RGB(bytes[pos], bytes[pos + 1], bytes[pos + 2]);
         }
         return null;
     }
 
-    private class ImageData {
+    private void setRGB(ImageData file, Point point, RGB rgb) {
+        int pos = (file.getWidth() * point.y + point.x) * 4;
+        byte[] bytes = file.getBytes();
+        if (pos <= bytes.length - 4) {
+            bytes[pos] = (byte)rgb.r;
+            bytes[pos + 1] = (byte)rgb.g;
+            bytes[pos + 2] = (byte)rgb.b;
+            bytes[pos + 3] = (byte)255;
+        }
+    }
+
+    public class ImageData {
         private int mWidth;
         private int mHeight;
         private ByteBuffer mByteBuffer;
 
+        public ImageData(int width, int height) {
+            mWidth = width;
+            mHeight = height;
+            mByteBuffer = ByteBuffer.allocate(width * height * 4);
+        }
         public ImageData(int width, int height, ByteBuffer byteBuffer) {
            mWidth = width;
            mHeight = height;
@@ -181,6 +189,22 @@ public class Motion {
             this.r = r;
             this.g = g;
             this.b = b;
+        }
+    }
+
+    public class MotionResult {
+        public boolean movementDetected;
+
+        public ImageData imageData;
+
+        public MotionResult(boolean movementDetected) {
+            this.movementDetected = movementDetected;
+            this.imageData = null;
+        }
+
+        public MotionResult(boolean movementDetected, ImageData imageData) {
+            this.movementDetected = movementDetected;
+            this.imageData = imageData;
         }
     }
 }

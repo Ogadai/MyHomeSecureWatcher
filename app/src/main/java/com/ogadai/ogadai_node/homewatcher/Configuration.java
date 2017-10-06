@@ -18,6 +18,8 @@ public class Configuration {
     private int mMaxPercent;
     private int mSequence;
     private int mScale;
+    private int mThrottleMinute;
+    private int mThrottleHour;
 
     public Configuration(String address, String name) {
         mAddress = address;
@@ -32,6 +34,8 @@ public class Configuration {
     public static final String MAXPERCENTPREF = "max_percent";
     public static final String SEQUENCEPREF = "sequence";
     public static final String SCALEPREF = "scale";
+    public static final String THROTTLEMINUTEPREF = "throttle_minute";
+    public static final String THROTTLEHOURPREF = "throttle_hour";
 
     private static final String DEFAULT_ADDRESS = "ws://10.0.2.2:45738";
     private static final String DEFAULT_NAME = "mytestnode";
@@ -41,6 +45,8 @@ public class Configuration {
     private static final int DEFAULT_MAXPERCENT = 40;
     private static final int DEFAULT_SEQUENCE = 2;
     private static final int DEFAULT_SCALE = 4;
+    private static final int DEFAULT_THROTTLEMINUTE= 10;
+    private static final int DEFAULT_THROTTLEHOUR = 30;
 
     public String getAddress() { return mAddress; }
     public void setAddress(String address) { mAddress = address; }
@@ -62,6 +68,8 @@ public class Configuration {
         config.setMaxPercent(getInt(prefs, MAXPERCENTPREF, DEFAULT_MAXPERCENT));
         config.setSequence(getInt(prefs, SEQUENCEPREF, DEFAULT_SEQUENCE));
         config.setScale(getInt(prefs, SCALEPREF, DEFAULT_SCALE));
+        config.setThrottleMinute(getInt(prefs, THROTTLEMINUTEPREF, DEFAULT_THROTTLEMINUTE));
+        config.setThrottleHour(getInt(prefs, THROTTLEHOURPREF, DEFAULT_THROTTLEHOUR));
 
         return config;
     }
@@ -77,6 +85,9 @@ public class Configuration {
         putInt(editor, MINPRECENTPREF, config.getMinPercent());
         putInt(editor, MAXPERCENTPREF, config.getMaxPercent());
         putInt(editor, SCALEPREF, config.getScale());
+
+        putInt(editor, THROTTLEMINUTEPREF, config.getThrottleMinute());
+        putInt(editor, THROTTLEHOURPREF, config.getThrottleHour());
 
         editor.commit();
     }
@@ -132,8 +143,21 @@ public class Configuration {
     public int getScale() {
         return mScale;
     }
-
     public void setScale(int scale) {
         mScale = scale;
+    }
+
+    public int getThrottleMinute() {
+        return mThrottleMinute;
+    }
+    public void setThrottleMinute(int throttleMinute) {
+        mThrottleMinute = throttleMinute;
+    }
+
+    public int getThrottleHour() {
+        return mThrottleHour;
+    }
+    public void setThrottleHour(int throttleHour) {
+        mThrottleHour = throttleHour;
     }
 }

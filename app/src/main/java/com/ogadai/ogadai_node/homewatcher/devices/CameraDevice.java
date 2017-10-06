@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.ogadai.ogadai_node.homewatcher.Camera2;
 import com.ogadai.ogadai_node.homewatcher.CameraControls;
+import com.ogadai.ogadai_node.homewatcher.CameraPreview;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
     private static final String OFF = "off";
 
     private CameraControls mCameraControls;
+    private CameraPreview mCameraPreview;
 
     private ScheduledExecutorService mScheduler;
     private ScheduledFuture mStopTimer;
@@ -49,6 +51,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
     public void setCameraControls(CameraControls controls) {
         mCameraControls = controls;
     }
+    public void setCameraPreview(CameraPreview preview) { mCameraPreview = preview; }
 
     @Override
     public void setState(String state) {
@@ -130,7 +133,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         }
     }
 
-    private void startMotion() {
+    private synchronized void startMotion() {
         if (!mMotionOn) {
             mMotion = new Motion();
             mMotionOn = true;
@@ -139,7 +142,7 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
             start();
         }
     }
-    private void stopMotion() {
+    private synchronized void stopMotion() {
         if (mMotionOn) {
             mMotionOn = false;
             mMotion = null;
@@ -149,7 +152,8 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         }
     }
 
-    private void imageMotion(byte[] bytes) {
+    private synchronized void imageMotion(byte[] bytes) {
+        if (mMotion == null) return;
         Log.i(TAG, "Image for motion detection");
 
         // Get the image bytes
@@ -157,12 +161,21 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
         ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getRowBytes());
         bitmap.copyPixelsToBuffer(bitmapBuffer);
 
-        if (mMotion.checkImage(bitmap.getWidth(), bitmap.getHeight(), bitmapBuffer)) {
+        Motion.MotionResult result = mMotion.checkImage(bitmap.getWidth(), bitmap.getHeight(), bitmapBuffer);
+        if (result.movementDetected) {
             // Movement detected
             emit("movement");
 
             // Upload the snapshot
             post("UploadSnapshot", bytes);
+        }
+
+        if (result.imageData != null && mCameraPreview != null) {
+            // Render the image
+            mCameraPreview.showImage(
+                    result.imageData.getWidth(),
+                    result.imageData.getHeight(),
+                    result.imageData.getBytes());
         }
     }
 

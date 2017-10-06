@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -20,14 +21,18 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.nio.ByteBuffer;
 
 public class MainActivity extends AppCompatActivity {
     private Configuration mConfig;
     private boolean mIsBound;
 
     private TextView mConnectionState;
+    private ImageView mPreviewImage;
 
     private static final String TAG = "MainActivity";
 
@@ -39,8 +44,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mConnectionState = (TextView)findViewById(R.id.connectionState);
+        mPreviewImage = (ImageView)findViewById(R.id.previewImage);
 
-        // The filter's action is BROADCAST_ACTION
+        // Register for status updates
         IntentFilter statusIntentFilter = new IntentFilter(WatcherService.BROADCAST_NODE_STATUS);
         ConnectionStateReceiver mStateReceiver = new ConnectionStateReceiver(
                 new ConnectionStateReceiver.Callback() {
@@ -54,10 +60,25 @@ public class MainActivity extends AppCompatActivity {
                             });
                     }
                 });
-
-        // Registers the DownloadStateReceiver and its intent filters
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mStateReceiver, statusIntentFilter);
+
+        // Register for preview images
+        IntentFilter previewIntentFilter = new IntentFilter(WatcherService.BROADCAST_NODE_PREVIEW);
+        PreviewReceiver mPreviewReceiver = new PreviewReceiver(
+                new PreviewReceiver.Callback() {
+                    @Override
+                    public void preview(final int width, final int height, final byte[] imageBytes) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showPreview(width, height, imageBytes);
+                            }
+                        });
+                    }
+                });
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mPreviewReceiver, previewIntentFilter);
 
         requestPermissions(new String[]{
                 Manifest.permission.CAMERA,
@@ -158,6 +179,14 @@ public class MainActivity extends AppCompatActivity {
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void showPreview(int width, int height, byte[] imageBytes) {
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(imageBytes));
+
+        Log.i(TAG, "Showing preview image: (" + width + ", " + height + ")");
+        mPreviewImage.setImageBitmap(bitmap);
     }
 
     private void showSettings() {

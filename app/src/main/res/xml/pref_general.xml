@@ -70,4 +70,24 @@
         android:singleLine="true"
         android:title="@string/pref_title_scale" />
 
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_throttleminute"
+        android:inputType="number"
+        android:key="throttle_minute"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_throttleminute" />
+
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_throttlehour"
+        android:inputType="number"
+        android:key="throttle_hour"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_throttlehour" />
+
 </PreferenceScreen>

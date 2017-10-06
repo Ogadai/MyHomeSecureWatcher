@@ -28,6 +28,12 @@
     <string name="pref_title_scale">Scale</string>
     <string name="pref_default_scale">4</string>
 
+    <string name="pref_title_throttleminute">Throttle/minute</string>
+    <string name="pref_default_throttleminute">10</string>
+
+    <string name="pref_title_throttlehour">Throttle/hour</string>
+    <string name="pref_default_throttlehour">30</string>
+
     <string name="watcher_service_started">Started watcher</string>
     <string name="watcher_service_stopped">Stopped watcher</string>
     <string name="watcher_service_label">Home Watcher</string>

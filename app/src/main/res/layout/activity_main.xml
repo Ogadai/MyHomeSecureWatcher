@@ -14,4 +14,9 @@
         android:layout_margin="10dp"
         android:text="Not connected" />
 
+    <ImageView
+        android:id="@+id/previewImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp" />
 </LinearLayout>

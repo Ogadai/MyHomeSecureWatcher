@@ -58,6 +58,9 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
     public void setCameraControls(CameraControls controls) {
         mCameraDevice.setCameraControls(controls);
     }
+    public void setCameraPreview(CameraPreview preview) {
+        mCameraDevice.setCameraPreview(preview);
+    }
 
     public void connect(Configuration config) {
         mConfig = config;
