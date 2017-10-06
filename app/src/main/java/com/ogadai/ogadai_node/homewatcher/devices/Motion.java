@@ -8,6 +8,8 @@ import android.util.Log;
 import com.ogadai.ogadai_node.homewatcher.Configuration;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Created by alee on 24/07/2017.
@@ -19,6 +21,8 @@ public class Motion {
 
     private Configuration mConfig;
     private int mColourThreshold;
+
+    private ArrayList<Date> mDetectionTimes = new ArrayList<>();
 
     private static final String TAG = "Motion";
 
@@ -62,7 +66,36 @@ public class Motion {
     }
 
     private boolean throttleMotionDetected() {
-        return true;
+        Date now = new Date();
+
+        int lastHour = 0;
+        int lastMinute = 0;
+
+        int index = mDetectionTimes.size();
+        while(index > 0) {
+            index--;
+
+            Date captureTime = mDetectionTimes.get(index);
+            long seconds = (now.getTime() - captureTime.getTime()) / 1000;
+            if (seconds < 60) {
+                lastHour++;
+                lastMinute++;
+            } else if (seconds < 60 * 60) {
+                lastHour++;
+            } else {
+                mDetectionTimes.remove(index);
+            }
+        }
+
+        Log.i(TAG, "Motion detected - " + lastMinute + " in last minute, " + lastHour + " in last hour");
+        boolean reportMotion = (
+                lastMinute < mConfig.getThrottleMinute() &&
+                lastHour < mConfig.getThrottleHour());
+
+        if (reportMotion) {
+            mDetectionTimes.add(now);
+        }
+        return reportMotion;
     }
 
     private ImageData getImageData(int width, int height, ByteBuffer byteBuffer) {
