@@ -20,13 +20,14 @@ public class PreviewReceiver extends BroadcastReceiver {
         int width = intent.getIntExtra(WatcherService.EXTENDED_DATA_IMAGEWIDTH, 0);
         int height = intent.getIntExtra(WatcherService.EXTENDED_DATA_IMAGEHEIGHT, 0);
         byte[] imageBytes = intent.getByteArrayExtra(WatcherService.EXTENDED_DATA_IMAGEBYTES);
+        boolean motionDetected = intent.getBooleanExtra(WatcherService.EXTENDED_DATA_MOTIONDETECTED, false);
 
         if (imageBytes != null) {
-            mCallback.preview(width, height, imageBytes);
+            mCallback.preview(width, height, imageBytes, motionDetected);
         }
     }
 
     public interface Callback {
-        void preview(int width, int height, byte[] imageBytes);
+        void preview(int width, int height, byte[] imageBytes, boolean motionDetected);
     }
 }

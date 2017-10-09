@@ -39,4 +39,6 @@
     <string name="watcher_service_label">Home Watcher</string>
 
     <string name="no_camera_permission">Camera permission was not granted</string>
+
+    <string name="test_motion_label">Test motion</string>
 </resources>

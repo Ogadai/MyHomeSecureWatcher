@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -21,9 +22,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.nio.ByteBuffer;
 
@@ -33,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mConnectionState;
     private ImageView mPreviewImage;
+    private LinearLayout mPreviewImageBackground;
 
     private static final String TAG = "MainActivity";
 
@@ -43,8 +48,23 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        final Context activityContext = this;
+
         mConnectionState = (TextView)findViewById(R.id.connectionState);
         mPreviewImage = (ImageView)findViewById(R.id.previewImage);
+        mPreviewImageBackground = (LinearLayout)findViewById(R.id.previewImageBackground);
+
+        ((ToggleButton)findViewById(R.id.toggleMotion)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                Intent localIntent =
+                        new Intent(WatcherService.BROADCAST_NODE_TEST)
+                                // Puts the status into the Intent
+                                .putExtra(WatcherService.EXTENDED_DATA_TESTMOTIONON, isChecked);
+                // Broadcasts the Intent to receivers in this app.
+                LocalBroadcastManager.getInstance(activityContext).sendBroadcast(localIntent);
+            }
+        });
 
         // Register for status updates
         IntentFilter statusIntentFilter = new IntentFilter(WatcherService.BROADCAST_NODE_STATUS);
@@ -68,11 +88,11 @@ public class MainActivity extends AppCompatActivity {
         PreviewReceiver mPreviewReceiver = new PreviewReceiver(
                 new PreviewReceiver.Callback() {
                     @Override
-                    public void preview(final int width, final int height, final byte[] imageBytes) {
+                    public void preview(final int width, final int height, final byte[] imageBytes, final boolean motionDetected) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                showPreview(width, height, imageBytes);
+                                showPreview(width, height, imageBytes, motionDetected);
                             }
                         });
                     }
@@ -181,12 +201,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void showPreview(int width, int height, byte[] imageBytes) {
+    private void showPreview(int width, int height, byte[] imageBytes, boolean motionDetected) {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(imageBytes));
 
         Log.i(TAG, "Showing preview image: (" + width + ", " + height + ")");
         mPreviewImage.setImageBitmap(bitmap);
+
+        mPreviewImageBackground.setBackgroundColor(motionDetected ? Color.RED : Color.WHITE);
     }
 
     private void showSettings() {

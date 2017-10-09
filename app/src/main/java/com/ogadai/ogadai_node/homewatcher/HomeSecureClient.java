@@ -177,7 +177,7 @@ public class HomeSecureClient implements WebsocketClientEndpoint.MessageHandler 
         mSettings = settings.getSettings();
     }
 
-    private void handleMessage(SetState setState) {
+    public void handleMessage(SetState setState) {
         if (mDevices.containsKey(setState.getName())) {
             Device target = mDevices.get(setState.getName());
             target.setState(setState.getState());

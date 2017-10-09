@@ -175,7 +175,8 @@ public class CameraDevice extends DeviceBase implements Camera2.TakePictureCallb
             mCameraPreview.showImage(
                     result.imageData.getWidth(),
                     result.imageData.getHeight(),
-                    result.imageData.getBytes());
+                    result.imageData.getBytes(),
+                    result.movementDetected);
         }
     }
 

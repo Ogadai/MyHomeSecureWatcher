@@ -5,5 +5,5 @@ package com.ogadai.ogadai_node.homewatcher;
  */
 
 public interface CameraPreview {
-    void showImage(int width, int height, byte[] imageBytes);
+    void showImage(int width, int height, byte[] imageBytes, boolean motionDetected);
 }

@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.media.Image;
 import android.os.Binder;
@@ -64,6 +65,11 @@ public class WatcherService extends Service {
     public static final String EXTENDED_DATA_IMAGEWIDTH = "com.ogadai.ogadai_node.homewatcher.IMAGEWIDTH";
     public static final String EXTENDED_DATA_IMAGEHEIGHT = "com.ogadai.ogadai_node.homewatcher.IMAGEHEIGHT";
     public static final String EXTENDED_DATA_IMAGEBYTES = "com.ogadai.ogadai_node.homewatcher.IMAGEBYTES";
+    public static final String EXTENDED_DATA_MOTIONDETECTED = "com.ogadai.ogadai_node.homewatcher.MOTIONDETECTED";
+
+    public static final String BROADCAST_NODE_TEST = "com.ogadai.ogadai_node.homewatcher.TEST";
+    // Defines the key for the status "extra" in an Intent
+    public static final String EXTENDED_DATA_TESTMOTIONON = "com.ogadai.ogadai_node.homewatcher.TESTMOTIONON";
 
     private static final int WAKEREFRESHSECONDS = 10*60;
 
@@ -110,18 +116,31 @@ public class WatcherService extends Service {
         mClient.setCameraControls(mCamera2);
         mClient.setCameraPreview(new CameraPreview() {
             @Override
-            public void showImage(int width, int height, byte[] imageBytes) {
+            public void showImage(int width, int height, byte[] imageBytes, boolean motionDetected) {
                 Intent localIntent =
                         new Intent(BROADCAST_NODE_PREVIEW)
                                 .putExtra(EXTENDED_DATA_IMAGEWIDTH, width)
                                 .putExtra(EXTENDED_DATA_IMAGEHEIGHT, height)
-                                .putExtra(EXTENDED_DATA_IMAGEBYTES, imageBytes);
+                                .putExtra(EXTENDED_DATA_IMAGEBYTES, imageBytes)
+                                .putExtra(EXTENDED_DATA_MOTIONDETECTED, motionDetected);
                 // Broadcasts the Intent to receivers in this app.
                 LocalBroadcastManager.getInstance(broadcastContext).sendBroadcast(localIntent);
             }
         });
 
         mClient.connect(config);
+
+        // Register for status updates
+        IntentFilter testIntentFilter = new IntentFilter(WatcherService.BROADCAST_NODE_TEST);
+        MotionTestReceiver mTestReceiver = new MotionTestReceiver(
+                new MotionTestReceiver.Callback() {
+                    @Override
+                    public void motionTest(final boolean testOn) {
+                        mClient.handleMessage(new SetState("camera", "testMotion." + (testOn ? "motion" : "off")));
+                    }
+                });
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mTestReceiver, testIntentFilter);
 
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
         getWakeLock();
